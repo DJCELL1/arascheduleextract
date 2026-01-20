@@ -3,8 +3,13 @@ import pdfplumber
 import pandas as pd
 import re
 from io import BytesIO
+from hd_theme import apply_hd_theme, add_logo
 
 st.set_page_config(page_title="ARA Hardware Schedule Extractor", layout="wide")
+
+# Apply Hardware Direct theme
+apply_hd_theme()
+add_logo()
 
 def extract_ara_hardware_data(pdf_path):
     """Extract door hardware data from ARA format PDF"""
