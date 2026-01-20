@@ -468,7 +468,7 @@ def main():
                         area_summary.columns = ['Area', 'Door Type', 'Door Count']
                         area_summary.to_excel(writer, sheet_name='Area Summary', index=False)
 
-                        # Items by Door Type - create a sheet for each door type
+                        # Items by Door Type - create a sheet with door type headers
                         # Filter out empty door types
                         df_with_door_type = df[df['Door Type'].notna() & (df['Door Type'] != '')].copy()
 
@@ -486,24 +486,21 @@ def main():
                             for door_type in unique_door_types:
                                 door_type_data = door_type_breakdown[door_type_breakdown['Door Type'] == door_type]
                                 if not door_type_data.empty:
-                                    # Add header row
+                                    # Add header row with door type
                                     all_door_types_data.append({
-                                        'Door Type': f'=== {door_type} ===',
-                                        'Code': '',
+                                        'Code': f'{door_type}',
                                         'Product Description': '',
                                         'Total Quantity': ''
                                     })
                                     # Add data rows
                                     for _, row in door_type_data.iterrows():
                                         all_door_types_data.append({
-                                            'Door Type': '',
                                             'Code': row['Code'],
                                             'Product Description': row['Product Description'],
                                             'Total Quantity': int(row['Total Quantity']) if pd.notna(row['Total Quantity']) else 0
                                         })
                                     # Add blank row between door types
                                     all_door_types_data.append({
-                                        'Door Type': '',
                                         'Code': '',
                                         'Product Description': '',
                                         'Total Quantity': ''
