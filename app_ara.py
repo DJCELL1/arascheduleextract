@@ -468,6 +468,47 @@ def main():
                         area_summary.columns = ['Area', 'Door Type', 'Door Count']
                         area_summary.to_excel(writer, sheet_name='Area Summary', index=False)
 
+                        # Items by Door Type - create a sheet for each door type
+                        door_type_breakdown = df.groupby(['Door Type', 'Code', 'Product Description']).agg({
+                            'Quantity': lambda x: pd.to_numeric(x, errors='coerce').sum()
+                        }).reset_index()
+                        door_type_breakdown.columns = ['Door Type', 'Code', 'Product Description', 'Total Quantity']
+
+                        # Get unique door types
+                        unique_door_types = sorted(df['Door Type'].dropna().unique().tolist())
+
+                        # Create combined sheet with all door types
+                        all_door_types_data = []
+                        for door_type in unique_door_types:
+                            door_type_data = door_type_breakdown[door_type_breakdown['Door Type'] == door_type]
+                            if not door_type_data.empty:
+                                # Add header row
+                                all_door_types_data.append({
+                                    'Door Type': f'=== {door_type} ===',
+                                    'Code': '',
+                                    'Product Description': '',
+                                    'Total Quantity': ''
+                                })
+                                # Add data rows
+                                for _, row in door_type_data.iterrows():
+                                    all_door_types_data.append({
+                                        'Door Type': '',
+                                        'Code': row['Code'],
+                                        'Product Description': row['Product Description'],
+                                        'Total Quantity': int(row['Total Quantity'])
+                                    })
+                                # Add blank row between door types
+                                all_door_types_data.append({
+                                    'Door Type': '',
+                                    'Code': '',
+                                    'Product Description': '',
+                                    'Total Quantity': ''
+                                })
+
+                        if all_door_types_data:
+                            combined_df = pd.DataFrame(all_door_types_data)
+                            combined_df.to_excel(writer, sheet_name='Items by Door Type', index=False)
+
                     excel_data = output.getvalue()
                     st.download_button(
                         label="📥 Download as Excel",
