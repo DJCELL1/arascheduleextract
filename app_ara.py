@@ -475,11 +475,49 @@ def main():
                 col1, col2, col3 = st.columns(3)
 
                 with col1:
-                    # Export to CSV
-                    csv = filtered_df.to_csv(index=False)
+                    # Export to CSV with door type summary
+                    csv_output = BytesIO()
+
+                    # Write main data
+                    filtered_df.to_csv(csv_output, index=False)
+
+                    # Add door type breakdown summary
+                    df_with_door_type = df[df['Door Type'].notna() & (df['Door Type'] != '')].copy()
+
+                    if not df_with_door_type.empty:
+                        # Add blank lines before summary
+                        csv_output.write(b'\n\n')
+                        csv_output.write(b'DOOR TYPE SUMMARY\n')
+                        csv_output.write(b'\n')
+
+                        door_type_breakdown = df_with_door_type.groupby(['Door Type', 'Code', 'Product Description']).agg({
+                            'Quantity': lambda x: pd.to_numeric(x, errors='coerce').sum()
+                        }).reset_index()
+                        door_type_breakdown.columns = ['Door Type', 'Code', 'Product Description', 'Total Quantity']
+
+                        unique_door_types = sorted(df_with_door_type['Door Type'].unique().tolist())
+
+                        for door_type in unique_door_types:
+                            door_type_data = door_type_breakdown[door_type_breakdown['Door Type'] == door_type]
+                            if not door_type_data.empty:
+                                # Write door type header
+                                csv_output.write(f'{door_type}\n'.encode())
+                                csv_output.write(b'Code,Product Description,Total Quantity\n')
+
+                                # Write items for this door type
+                                for _, row in door_type_data.iterrows():
+                                    qty = int(row['Total Quantity']) if pd.notna(row['Total Quantity']) else 0
+                                    # Escape commas in product description
+                                    desc = str(row['Product Description']).replace('"', '""')
+                                    csv_output.write(f'{row["Code"]},"{desc}",{qty}\n'.encode())
+
+                                # Blank line between door types
+                                csv_output.write(b'\n')
+
+                    csv_data = csv_output.getvalue()
                     st.download_button(
                         label="📥 Download as CSV",
-                        data=csv,
+                        data=csv_data,
                         file_name=f"{base_filename}.csv",
                         mime="text/csv"
                     )
