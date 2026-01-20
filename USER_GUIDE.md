@@ -123,26 +123,54 @@ The sidebar provides powerful filtering options to narrow down your data:
 ### Tab 5: 📥 Export
 **What it shows**: Three export options for your data
 
-#### Option 1: Download as CSV
+#### Option 1: Schedule CSV
 **Contains**:
-- Main data table (filtered by your sidebar selections)
-- **DOOR TYPE SUMMARY** section at bottom with:
-  - Items grouped by door type
-  - Product codes, descriptions, and total quantities
+- Main door hardware schedule data table
+- Filtered by your sidebar selections
+- All door details with product codes, descriptions, and quantities
 
-**File naming**: `JobNumber_JobName.csv`
+**File naming**: `JobNumber_JobName_schedule.csv`
 
 **Best for**:
-- Quick data sharing
+- Complete schedule documentation
 - Opening in Excel or Google Sheets
-- Simple data analysis
+- Sharing full project data
+- Integration with other systems
 
 ---
 
-#### Option 2: Download as Excel
+#### Option 2: Door Type Summary CSV
+**Contains**:
+- Items grouped by door type
+- Product codes, descriptions, and total quantities
+- Format: Door type header, then products below
+
+**Example format**:
+```
+Timber
+Code,Product Description,Total Quantity
+5292-MSB,"85mm Skirting Doorstop...",14
+8456-MSB,"NIDO Privacy Set...",6
+
+Aluminium
+Code,Product Description,Total Quantity
+5263L-PC,"WB 5263L Overhead...",1
+```
+
+**File naming**: `JobNumber_JobName_door_type_summary.csv`
+
+**Best for**:
+- Ordering hardware by door type
+- Quick quantity reference
+- Supplier quotations
+- Simple ordering lists
+
+---
+
+#### Option 3: Complete Excel
 **Contains 4 sheets**:
 
-1. **Door Hardware**: Complete data table
+1. **Door Hardware**: Complete data table (filtered)
 2. **Product Summary**: Total quantities for each product
 3. **Area Summary**: Door counts by area and type
 4. **Items by Door Type**: Products grouped by door type with quantities
@@ -154,21 +182,7 @@ The sidebar provides powerful filtering options to narrow down your data:
 - Multiple stakeholders
 - Professional documentation
 - Pivot tables and advanced analysis
-
----
-
-#### Option 3: Product Summary CSV
-**Contains**:
-- Product Code
-- Product Description
-- Total Quantity (across entire project)
-
-**File naming**: `JobNumber_JobName_product_summary.csv`
-
-**Best for**:
-- Quick ordering reference
-- Sharing with suppliers
-- Inventory planning
+- Complete project overview
 
 ---
 
@@ -179,10 +193,10 @@ All exports are automatically named using job information from the PDF:
 **Format**: `JobNumber_JobName.extension`
 
 **Examples**:
-- `12345_Villa_Project.csv`
-- `12345_Villa_Project.xlsx`
-- `12345_Villa_Project_product_summary.csv`
-- `12345_Villa_Project_timber.csv` (door type breakdown)
+- `12345_Villa_Project_schedule.csv` (main schedule)
+- `12345_Villa_Project_door_type_summary.csv` (items by door type)
+- `12345_Villa_Project.xlsx` (complete Excel workbook)
+- `12345_Villa_Project_timber.csv` (specific door type from tab 4)
 
 **Note**: If no job information is found in the PDF, files default to `ara_hardware_schedule.extension`
 
@@ -204,27 +218,36 @@ All exports are automatically named using job information from the PDF:
 
 ### Common Use Cases
 
-**Scenario 1: Ordering All Hardware**
+**Scenario 1: Ordering All Hardware by Door Type**
 - Go to Export tab
-- Download Excel file
-- Use "Items by Door Type" sheet for organized ordering
+- Download "Door Type Summary CSV"
+- Send to supplier for quoting
+- Easy to reference: one section per door type
 
-**Scenario 2: Finding a Specific Product**
+**Scenario 2: Complete Project Documentation**
+- Go to Export tab
+- Download "Complete Excel"
+- Share with project team
+- Contains all data organized in multiple sheets
+
+**Scenario 3: Finding a Specific Product**
 - Go to Product Search tab
 - Search by code or description
 - See all doors using that product
+- Check total quantities needed
 
-**Scenario 3: Calculating Hardware for One Area**
+**Scenario 4: Calculating Hardware for One Area**
 - Use Area filter in sidebar
 - Go to Summary tab
 - View product quantities for that area only
-- Export filtered CSV
+- Download "Schedule CSV" with filtered data
 
-**Scenario 4: Ordering by Door Type**
+**Scenario 5: Ordering Just One Door Type**
 - Go to Items by Door Type tab
 - Select specific door type (e.g., "Timber")
-- Download CSV breakdown
-- Send to supplier
+- Review quantities and items
+- Download CSV for just that type
+- Send to specialized supplier
 
 ---
 
