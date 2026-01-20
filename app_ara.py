@@ -286,7 +286,7 @@ def main():
                 filtered_df = filtered_df[filtered_df['Description'] == selected_description]
 
             # Display tabs
-            tab1, tab2, tab3, tab4 = st.tabs(["📊 Data Table", "📈 Summary", "🔍 Product Search", "📥 Export"])
+            tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Data Table", "📈 Summary", "🔍 Product Search", "🏷️ Items by Door Type", "📥 Export"])
 
             with tab1:
                 st.dataframe(filtered_df, use_container_width=True, height=600)
@@ -354,6 +354,87 @@ def main():
                         st.warning("No matching products found")
 
             with tab4:
+                st.subheader("🏷️ Items Breakdown by Door Type")
+
+                # Group by Door Type and Product
+                door_type_breakdown = df.groupby(['Door Type', 'Code', 'Product Description']).agg({
+                    'Quantity': lambda x: pd.to_numeric(x, errors='coerce').sum(),
+                    'Door': 'count'  # Count how many doors use this item
+                }).reset_index()
+                door_type_breakdown.columns = ['Door Type', 'Code', 'Product Description', 'Total Quantity', 'Doors Using Item']
+                door_type_breakdown = door_type_breakdown.sort_values(['Door Type', 'Total Quantity'], ascending=[True, False])
+
+                # Get unique door types
+                unique_door_types = sorted(df['Door Type'].dropna().unique().tolist())
+
+                if unique_door_types:
+                    # Create selector for door type
+                    selected_breakdown_type = st.selectbox(
+                        "Select Door Type to View Breakdown",
+                        ['All Door Types'] + unique_door_types
+                    )
+
+                    if selected_breakdown_type == 'All Door Types':
+                        # Show all door types with expandable sections
+                        for door_type in unique_door_types:
+                            door_type_data = door_type_breakdown[door_type_breakdown['Door Type'] == door_type]
+
+                            if not door_type_data.empty:
+                                total_items = len(door_type_data)
+                                total_qty = door_type_data['Total Quantity'].sum()
+                                num_doors = df[df['Door Type'] == door_type]['Door'].nunique()
+
+                                with st.expander(f"**{door_type}** - {num_doors} doors, {total_items} unique items, {int(total_qty)} total quantity"):
+                                    # Show summary metrics
+                                    col1, col2, col3 = st.columns(3)
+                                    with col1:
+                                        st.metric("Number of Doors", num_doors)
+                                    with col2:
+                                        st.metric("Unique Items", total_items)
+                                    with col3:
+                                        st.metric("Total Quantity", int(total_qty))
+
+                                    # Show detailed breakdown
+                                    display_df = door_type_data[['Code', 'Product Description', 'Total Quantity', 'Doors Using Item']].copy()
+                                    display_df['Total Quantity'] = display_df['Total Quantity'].astype(int)
+                                    st.dataframe(display_df, use_container_width=True, height=400)
+                    else:
+                        # Show specific door type
+                        door_type_data = door_type_breakdown[door_type_breakdown['Door Type'] == selected_breakdown_type]
+
+                        if not door_type_data.empty:
+                            # Show summary metrics
+                            total_items = len(door_type_data)
+                            total_qty = door_type_data['Total Quantity'].sum()
+                            num_doors = df[df['Door Type'] == selected_breakdown_type]['Door'].nunique()
+
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                st.metric("Number of Doors", num_doors)
+                            with col2:
+                                st.metric("Unique Items", total_items)
+                            with col3:
+                                st.metric("Total Quantity", int(total_qty))
+
+                            st.markdown("---")
+
+                            # Show detailed breakdown
+                            display_df = door_type_data[['Code', 'Product Description', 'Total Quantity', 'Doors Using Item']].copy()
+                            display_df['Total Quantity'] = display_df['Total Quantity'].astype(int)
+                            st.dataframe(display_df, use_container_width=True, height=500)
+
+                            # Add download button for this door type
+                            csv_data = display_df.to_csv(index=False)
+                            st.download_button(
+                                label=f"📥 Download {selected_breakdown_type} Breakdown CSV",
+                                data=csv_data,
+                                file_name=f"{selected_breakdown_type.replace(' ', '_').lower()}_breakdown.csv",
+                                mime="text/csv"
+                            )
+                else:
+                    st.info("No door type information found in the data.")
+
+            with tab5:
                 st.subheader("Export Options")
 
                 col1, col2, col3 = st.columns(3)
