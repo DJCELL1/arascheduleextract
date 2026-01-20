@@ -131,6 +131,8 @@ def extract_ara_hardware_data(pdf_path):
 def extract_ara_hardware_data_v2(pdf_path):
     """Enhanced extraction using table detection for ARA format"""
     all_data = []
+    job_number = None
+    job_name = None
 
     with pdfplumber.open(pdf_path) as pdf:
         current_door = None
@@ -148,6 +150,19 @@ def extract_ara_hardware_data_v2(pdf_path):
 
             # Extract text lines for parsing
             lines = text.split('\n')
+
+            # Extract job number and name from first page header
+            if page_num == 0 and not job_number:
+                for i, line in enumerate(lines[:10]):  # Check first 10 lines
+                    # Look for job number pattern (e.g., "Job No: 12345" or "Project: 12345")
+                    job_match = re.search(r'(?:Job\s+No|Job\s+Number|Project|Job)[\s:]+([A-Z0-9\-]+)', line, re.IGNORECASE)
+                    if job_match:
+                        job_number = job_match.group(1)
+
+                    # Look for project/job name (often on same or next line)
+                    name_match = re.search(r'(?:Project\s+Name|Job\s+Name|Name)[\s:]+(.+)', line, re.IGNORECASE)
+                    if name_match:
+                        job_name = name_match.group(1).strip()
 
             for line in lines:
                 line = line.strip()
@@ -234,7 +249,12 @@ def extract_ara_hardware_data_v2(pdf_path):
                         'Quantity': quantity
                     })
 
-    return pd.DataFrame(all_data)
+    df = pd.DataFrame(all_data)
+    # Add job info as metadata
+    if not df.empty:
+        df.attrs['job_number'] = job_number
+        df.attrs['job_name'] = job_name
+    return df
 
 
 def main():
@@ -253,7 +273,22 @@ def main():
             df = extract_ara_hardware_data_v2("temp_upload.pdf")
 
         if not df.empty:
-            st.success(f"✅ Extracted {len(df)} product entries from {df['Door'].nunique()} doors")
+            # Get job info for file naming
+            job_number = df.attrs.get('job_number', '')
+            job_name = df.attrs.get('job_name', '')
+
+            # Create base filename from job info
+            if job_number and job_name:
+                base_filename = f"{job_number}_{job_name.replace(' ', '_')}"
+                st.success(f"✅ Extracted {len(df)} product entries from {df['Door'].nunique()} doors")
+                st.info(f"📋 Job: {job_number} - {job_name}")
+            elif job_number:
+                base_filename = f"{job_number}"
+                st.success(f"✅ Extracted {len(df)} product entries from {df['Door'].nunique()} doors")
+                st.info(f"📋 Job: {job_number}")
+            else:
+                base_filename = "ara_hardware_schedule"
+                st.success(f"✅ Extracted {len(df)} product entries from {df['Door'].nunique()} doors")
 
             # Sidebar filters
             st.sidebar.header("Filters")
@@ -428,7 +463,7 @@ def main():
                             st.download_button(
                                 label=f"📥 Download {selected_breakdown_type} Breakdown CSV",
                                 data=csv_data,
-                                file_name=f"{selected_breakdown_type.replace(' ', '_').lower()}_breakdown.csv",
+                                file_name=f"{base_filename}_{selected_breakdown_type.replace(' ', '_').lower()}.csv",
                                 mime="text/csv"
                             )
                 else:
@@ -445,7 +480,7 @@ def main():
                     st.download_button(
                         label="📥 Download as CSV",
                         data=csv,
-                        file_name="ara_hardware_schedule.csv",
+                        file_name=f"{base_filename}.csv",
                         mime="text/csv"
                     )
 
@@ -514,7 +549,7 @@ def main():
                     st.download_button(
                         label="📥 Download as Excel",
                         data=excel_data,
-                        file_name="ara_hardware_schedule.xlsx",
+                        file_name=f"{base_filename}.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
 
@@ -527,7 +562,7 @@ def main():
                     st.download_button(
                         label="📥 Product Summary CSV",
                         data=product_csv,
-                        file_name="product_summary.csv",
+                        file_name=f"{base_filename}_product_summary.csv",
                         mime="text/csv"
                     )
 
