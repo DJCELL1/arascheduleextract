@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"C:\\\\Users\\\\selwy\\\\Downloads\\\\MET FG*.pdf\" /b)",
+      "Bash(ls:*)",
+      "Bash(ls \"C:\\\\Users\\\\selwy\\\\Downloads\"\"*.pdf | grep -i \"MET FG \")",
+      "Bash(git init:*)",
+      "Bash(git commit:*)",
+      "Bash(gh --version:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

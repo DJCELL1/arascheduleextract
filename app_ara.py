@@ -472,23 +472,25 @@ def main():
             with tab5:
                 st.subheader("Export Options")
 
+                # Row 1: Main exports
                 col1, col2, col3 = st.columns(3)
 
                 with col1:
-                    # Export to CSV with door type summary
-                    csv_output = BytesIO()
+                    # Export schedule CSV (main data only)
+                    csv = filtered_df.to_csv(index=False)
+                    st.download_button(
+                        label="📥 Schedule CSV",
+                        data=csv,
+                        file_name=f"{base_filename}_schedule.csv",
+                        mime="text/csv"
+                    )
 
-                    # Write main data
-                    filtered_df.to_csv(csv_output, index=False)
-
-                    # Add door type breakdown summary
+                with col2:
+                    # Export Door Type Summary CSV
                     df_with_door_type = df[df['Door Type'].notna() & (df['Door Type'] != '')].copy()
 
                     if not df_with_door_type.empty:
-                        # Add blank lines before summary
-                        csv_output.write(b'\n\n')
-                        csv_output.write(b'DOOR TYPE SUMMARY\n')
-                        csv_output.write(b'\n')
+                        csv_output = BytesIO()
 
                         door_type_breakdown = df_with_door_type.groupby(['Door Type', 'Code', 'Product Description']).agg({
                             'Quantity': lambda x: pd.to_numeric(x, errors='coerce').sum()
@@ -514,15 +516,17 @@ def main():
                                 # Blank line between door types
                                 csv_output.write(b'\n')
 
-                    csv_data = csv_output.getvalue()
-                    st.download_button(
-                        label="📥 Download as CSV",
-                        data=csv_data,
-                        file_name=f"{base_filename}.csv",
-                        mime="text/csv"
-                    )
+                        csv_data = csv_output.getvalue()
+                        st.download_button(
+                            label="📥 Door Type Summary CSV",
+                            data=csv_data,
+                            file_name=f"{base_filename}_door_type_summary.csv",
+                            mime="text/csv"
+                        )
+                    else:
+                        st.info("No door type data available")
 
-                with col2:
+                with col3:
                     # Export to Excel with multiple sheets
                     output = BytesIO()
                     with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -585,23 +589,10 @@ def main():
 
                     excel_data = output.getvalue()
                     st.download_button(
-                        label="📥 Download as Excel",
+                        label="📥 Complete Excel",
                         data=excel_data,
                         file_name=f"{base_filename}.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
-
-                with col3:
-                    # Export product summary only
-                    product_summary = df.groupby(['Code', 'Product Description']).agg({
-                        'Quantity': lambda x: pd.to_numeric(x, errors='coerce').sum()
-                    }).reset_index()
-                    product_csv = product_summary.to_csv(index=False)
-                    st.download_button(
-                        label="📥 Product Summary CSV",
-                        data=product_csv,
-                        file_name=f"{base_filename}_product_summary.csv",
-                        mime="text/csv"
                     )
 
         else:
