@@ -154,15 +154,29 @@ def extract_ara_hardware_data_v2(pdf_path):
             # Extract job number and name from first page header
             if page_num == 0 and not job_number:
                 for i, line in enumerate(lines[:10]):  # Check first 10 lines
-                    # Look for job number pattern (e.g., "Job No: 12345" or "Project: 12345")
-                    job_match = re.search(r'(?:Job\s+No|Job\s+Number|Project|Job)[\s:]+([A-Z0-9\-]+)', line, re.IGNORECASE)
-                    if job_match:
-                        job_number = job_match.group(1)
+                    # Look for job number pattern at start of line (e.g., "T009014.2: Name" or "T009014.2 - Name")
+                    # This pattern looks for alphanumeric code at start, followed by colon or dash, then the name
+                    job_line_match = re.match(r'^([A-Z0-9\.]+)\s*[:\-]\s*(.+)', line.strip())
+                    if job_line_match and not job_number:
+                        potential_job = job_line_match.group(1)
+                        potential_name = job_line_match.group(2).strip()
+                        # Only accept if it looks like a job number (contains letters/numbers/dots)
+                        if re.match(r'^[A-Z0-9\.]+$', potential_job):
+                            job_number = potential_job
+                            job_name = potential_name
+                            continue
+
+                    # Fallback: Look for traditional job number patterns
+                    if not job_number:
+                        job_match = re.search(r'(?:Job\s+No|Job\s+Number|Project|Job)[\s:]+([A-Z0-9\.\-]+)', line, re.IGNORECASE)
+                        if job_match:
+                            job_number = job_match.group(1)
 
                     # Look for project/job name (often on same or next line)
-                    name_match = re.search(r'(?:Project\s+Name|Job\s+Name|Name)[\s:]+(.+)', line, re.IGNORECASE)
-                    if name_match:
-                        job_name = name_match.group(1).strip()
+                    if not job_name:
+                        name_match = re.search(r'(?:Project\s+Name|Job\s+Name|Name)[\s:]+(.+)', line, re.IGNORECASE)
+                        if name_match:
+                            job_name = name_match.group(1).strip()
 
             for line in lines:
                 line = line.strip()
