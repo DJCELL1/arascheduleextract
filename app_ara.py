@@ -476,62 +476,90 @@ def main():
                 col1, col2, col3 = st.columns(3)
 
                 with col1:
-                    # Export schedule CSV (main data only)
-                    csv = filtered_df.to_csv(index=False)
+                    # Export Doors CSV
+                    # Create doors dataframe with unique door information
+                    doors_df = df.groupby('Door').agg({
+                        'Description': 'first',
+                        'Area': 'first',
+                        'Rating': 'first',
+                        'Handing': 'first',
+                        'Door Type': 'first'
+                    }).reset_index()
+
+                    # Reorder and rename columns to match example format
+                    doors_export = pd.DataFrame({
+                        'DoorNumber': doors_df['Door'],
+                        'DoorDescription': doors_df['Description'],
+                        'Area': doors_df['Area'],
+                        'Stage': '',  # Not extracted from current PDF
+                        'Stamping': '',  # Not extracted from current PDF
+                        'IsKeyed': '',  # Not extracted from current PDF
+                        'DoorHeight': '',  # Not extracted from current PDF
+                        'DoorWidth': '',  # Not extracted from current PDF
+                        'DoorThickness': '',  # Not extracted from current PDF
+                        'Rating': doors_df['Rating'],
+                        'HandingShortCode': doors_df['Handing'],
+                        'DoorType': doors_df['Door Type'],
+                        'DoorFinishShortCode': '',  # Not extracted from current PDF
+                        'FrameTypeShortCode': '',  # Not extracted from current PDF
+                        'FrameFinishShortCode': '',  # Not extracted from current PDF
+                        'LockFunctionShortCode': ''  # Not extracted from current PDF
+                    })
+
+                    csv_doors = doors_export.to_csv(index=False)
+                    # Use just job number for filename
+                    doors_filename = f"{job_number}_Doors.csv" if job_number else "Doors.csv"
                     st.download_button(
-                        label="📥 Schedule CSV",
-                        data=csv,
-                        file_name=f"{base_filename}_schedule.csv",
-                        mime="text/csv"
+                        label="📥 Doors CSV",
+                        data=csv_doors,
+                        file_name=doors_filename,
+                        mime="text/csv",
+                        help="Door-level information only"
                     )
 
                 with col2:
-                    # Export Door Type Summary CSV
-                    df_with_door_type = df[df['Door Type'].notna() & (df['Door Type'] != '')].copy()
+                    # Export Door Hardware CSV
+                    # Create door hardware dataframe matching example format
+                    hardware_export = pd.DataFrame({
+                        'DoorNumber': df['Door'],
+                        'DoorDescription': df['Description'],
+                        'Area': df['Area'],
+                        'Stage': '',  # Not extracted from current PDF
+                        'Stamping': '',  # Not extracted from current PDF
+                        'Rating': df['Rating'],
+                        'HandingShortCode': df['Handing'],
+                        'DoorType': df['Door Type'],
+                        'DoorFinishShortCode': '',  # Not extracted from current PDF
+                        'FrameTypeShortCode': '',  # Not extracted from current PDF
+                        'FrameFinishShortCode': '',  # Not extracted from current PDF
+                        'LockFunctionShortCode': '',  # Not extracted from current PDF
+                        'PartCode': df['Code'],
+                        'Description': df['Product Description'],
+                        'ProductQuantity': df['Quantity'],
+                        'InstallQuantity': '',  # Not extracted from current PDF
+                        'InstallNote': df['Notes']
+                    })
 
-                    if not df_with_door_type.empty:
-                        csv_output = BytesIO()
-
-                        door_type_breakdown = df_with_door_type.groupby(['Door Type', 'Code', 'Product Description']).agg({
-                            'Quantity': lambda x: pd.to_numeric(x, errors='coerce').sum()
-                        }).reset_index()
-                        door_type_breakdown.columns = ['Door Type', 'Code', 'Product Description', 'Total Quantity']
-
-                        unique_door_types = sorted(df_with_door_type['Door Type'].unique().tolist())
-
-                        for door_type in unique_door_types:
-                            door_type_data = door_type_breakdown[door_type_breakdown['Door Type'] == door_type]
-                            if not door_type_data.empty:
-                                # Write door type header
-                                csv_output.write(f'{door_type}\n'.encode())
-                                csv_output.write(b'Code,Product Description,Total Quantity\n')
-
-                                # Write items for this door type
-                                for _, row in door_type_data.iterrows():
-                                    qty = int(row['Total Quantity']) if pd.notna(row['Total Quantity']) else 0
-                                    # Escape commas in product description
-                                    desc = str(row['Product Description']).replace('"', '""')
-                                    csv_output.write(f'{row["Code"]},"{desc}",{qty}\n'.encode())
-
-                                # Blank line between door types
-                                csv_output.write(b'\n')
-
-                        csv_data = csv_output.getvalue()
-                        st.download_button(
-                            label="📥 Door Type Summary CSV",
-                            data=csv_data,
-                            file_name=f"{base_filename}_door_type_summary.csv",
-                            mime="text/csv"
-                        )
-                    else:
-                        st.info("No door type data available")
+                    csv_hardware = hardware_export.to_csv(index=False)
+                    # Use just job number for filename
+                    hardware_filename = f"{job_number}_DoorHardware.csv" if job_number else "DoorHardware.csv"
+                    st.download_button(
+                        label="📥 Door Hardware CSV",
+                        data=csv_hardware,
+                        file_name=hardware_filename,
+                        mime="text/csv",
+                        help="Complete door hardware schedule with products"
+                    )
 
                 with col3:
                     # Export to Excel with multiple sheets
                     output = BytesIO()
                     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                        # Main data
-                        filtered_df.to_excel(writer, sheet_name='Door Hardware', index=False)
+                        # Doors sheet
+                        doors_export.to_excel(writer, sheet_name='Doors', index=False)
+
+                        # Door Hardware sheet
+                        hardware_export.to_excel(writer, sheet_name='Door Hardware', index=False)
 
                         # Product summary
                         product_summary = df.groupby(['Code', 'Product Description']).agg({
@@ -594,6 +622,9 @@ def main():
                         file_name=f"{base_filename}.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
+
+                # Add info about export format
+                st.info("💡 CSV exports match the standard format with job number in filename. Empty columns will be populated when data becomes available from PDF extraction.")
 
         else:
             st.warning("⚠️ No data extracted. Please check the PDF format.")
